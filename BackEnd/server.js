@@ -1,42 +1,54 @@
-// Import required modules
+// Import modules
 const express = require('express');
 const mysql = require('mysql');
 const cors = require('cors');
 
-// Create Express app
+// Initialize app
 const app = express();
 const PORT = 3002;
 
 // Middleware
-app.use(cors());
-app.use(express.json()); // to parse JSON bodies
+app.use(cors({
+  origin: 'http://localhost:5173' // Allow React frontend
+}));
+app.use(express.json()); // Parse JSON bodies
 
 // MySQL connection
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'Welcome@123',
-  database: 'react_auth'
+  password: 'Welcome@123', // replace with your MySQL password
+  database: 'react_auth'   // make sure this DB exists
 });
 
 db.connect(err => {
   if (err) {
-    console.error('MySQL connection failed:', err);
+    console.error('❌ MySQL connection error:', err);
   } else {
-    console.log('Connected to MySQL');
+    console.log('✅ Connected to MySQL');
   }
 });
 
-// Default route
+// GET all users
 app.get('/users', (req, res) => {
-  const sql = "SELECT * FROM users";
-  db.query(sql,(err,data) => {
-        if(err) return res.json(err);
-        return res.json(data);
-  }) 
+  const sql = 'SELECT * FROM users';
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json(err);
+    res.json(results);
+  });
+});
+
+// POST new user
+app.post('/users', (req, res) => {
+  const { name, email } = req.body;
+  const sql = 'INSERT INTO users (name, email) VALUES (?, ?)';
+  db.query(sql, [name, email], (err, result) => {
+    if (err) return res.status(500).json(err);
+    res.status(201).json({ message: 'User added', id: result.insertId });
+  });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
